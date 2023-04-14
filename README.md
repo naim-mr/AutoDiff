@@ -1,4 +1,4 @@
-Programming project for the second year of master MPRI.
+Programming project for the second year of master MPRI for the course "Functionnal programming and type system"
 
 
 It is an implementation of the paper : 
