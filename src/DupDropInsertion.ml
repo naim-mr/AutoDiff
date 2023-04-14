@@ -1,6 +1,7 @@
 open Linear
 open LinearHelp
 open LVarSet
+
 let map = List.map
 
 (* -------------------------------------------------------------------------- *)
@@ -10,14 +11,10 @@ let map = List.map
 (* It is represented in memory as a finite map, and is the identity
    everywhere else. *)
 
-type rho =
-  lvar LVarMap.t
+type rho = lvar LVarMap.t
 
 let apply (rho : rho) (x : lvar) : lvar =
-  try
-    LVarMap.find x rho
-  with Not_found ->
-    x
+  try LVarMap.find x rho with Not_found -> x
 
 (* -------------------------------------------------------------------------- *)
 
@@ -32,8 +29,8 @@ let apply (rho : rho) (x : lvar) : lvar =
    effect. *)
 
 let dup (z : lvar) (k : lvar * lvar -> expr) : expr =
-  let z1, z2 = lfresh(), lfresh() in
-  Let ([], [(z1, TUnknown); (z2, TUnknown)], Dup z, k (z1, z2))
+  let z1, z2 = (lfresh (), lfresh ()) in
+  Let ([], [ (z1, TUnknown); (z2, TUnknown) ], Dup z, k (z1, z2))
 
 (* For each variable [x] in the list [xs],
    [dup_many rho xs] splits the variable [z]
@@ -46,14 +43,12 @@ let dup (z : lvar) (k : lvar * lvar -> expr) : expr =
 
 let rec dup_many (rho : rho) (xs : lvars) (k : rho * rho -> expr) : expr =
   match xs with
-  | [] ->
-      k (rho, rho)
+  | [] -> k (rho, rho)
   | x :: xs ->
       let z = apply rho x in
       dup z @@ fun (z1, z2) ->
       dup_many rho xs @@ fun (rho1, rho2) ->
-      let rho1 = LVarMap.add x z1 rho1
-      and rho2 = LVarMap.add x z2 rho2 in
+      let rho1 = LVarMap.add x z1 rho1 and rho2 = LVarMap.add x z2 rho2 in
       k (rho1, rho2)
 
 (* -------------------------------------------------------------------------- *)
@@ -74,8 +69,7 @@ let rec dup_many (rho : rho) (xs : lvars) (k : rho * rho -> expr) : expr =
 
 let rec transform_lvars (rho : rho) (xs : lvars) (k : lvars -> expr) : expr =
   match xs with
-  | [] ->
-      k []
+  | [] -> k []
   | x :: xs ->
       let z = apply rho x in
       (* Because a renaming is injective, checking whether [rho(x)] occurs
@@ -92,8 +86,7 @@ let rec transform_lvars (rho : rho) (xs : lvars) (k : lvars -> expr) : expr =
         k (z1 :: zs)
       else
         (* [x] does not appear in [xs], so no [dup] node is required. *)
-        transform_lvars rho xs @@ fun zs ->
-        k (z :: zs)
+        transform_lvars rho xs @@ fun zs -> k (z :: zs)
 
 (* -------------------------------------------------------------------------- *)
 
@@ -105,48 +98,30 @@ let rec transform_lvars (rho : rho) (xs : lvars) (k : lvars -> expr) : expr =
 
 let rec transform_expr (rho : rho) (e : expr) : expr =
   match e with
-
-  | Loc (e, range) ->
-      Loc (transform_expr rho e, range)
-
-  | Ret (uxs, lxs) ->
-      transform_lvars rho lxs @@ fun lzs ->
-      Ret (uxs, lzs)
-
+  | Loc (e, range) -> Loc (transform_expr rho e, range)
+  | Ret (uxs, lxs) -> transform_lvars rho lxs @@ fun lzs -> Ret (uxs, lzs)
   | Let (ubs, lbs, e1, e2) ->
       (* Every variable that appears free both in [e1] and in [e2] must
          be split. *)
       let lxs = elements (inter (flv e1) (remove_lbindings lbs (flv e2))) in
       dup_many rho lxs @@ fun (rho1, rho2) ->
       Let (ubs, lbs, transform_expr rho1 e1, transform_expr rho2 e2)
-
-  | ULiteral _ | UUnOp _ | UBinOp _ | LZero _ | UTupleIntro _ ->
-      e
-
-  | LAdd (x1, x2) ->
-      transform_lvars rho [x1; x2] @@ begin function [z1; z2] ->
-      LAdd (z1, z2)
-      | _ -> assert false end
-
+  | ULiteral _ | UUnOp _ | UBinOp _ | LZero _ | UTupleIntro _ -> e
+  | LAdd (x1, x2) -> (
+      transform_lvars rho [ x1; x2 ] @@ function
+      | [ z1; z2 ] -> LAdd (z1, z2)
+      | _ -> assert false)
   | LMul (u, x) ->
       let z = apply rho x in
       LMul (u, z)
-
   | Drop x ->
       let z = apply rho x in
       Drop z
-
   | Dup x ->
       let z = apply rho x in
       Dup z
-
-  | UTupleElim (ubs, x, e) ->
-      UTupleElim (ubs, x, transform_expr rho e)
-
-  | LTupleIntro lxs ->
-      transform_lvars rho lxs @@ fun lzs ->
-      LTupleIntro lzs
-
+  | UTupleElim (ubs, x, e) -> UTupleElim (ubs, x, transform_expr rho e)
+  | LTupleIntro lxs -> transform_lvars rho lxs @@ fun lzs -> LTupleIntro lzs
   | LTupleElim (lbs, x, e) ->
       let z = apply rho x in
       (* If [x] appears free in [e], then it must be split. *)
@@ -154,24 +129,19 @@ let rec transform_expr (rho : rho) (e : expr) : expr =
         dup z @@ fun (z1, z2) ->
         let rho = LVarMap.add x z2 rho in
         LTupleElim (lbs, z1, transform_expr rho e)
-      else
-        LTupleElim (lbs, z, transform_expr rho e)
-
+      else LTupleElim (lbs, z, transform_expr rho e)
   | FunCall (f, uxs, lxs) ->
-      transform_lvars rho lxs @@ fun lzs ->
-      FunCall (f, uxs, lzs)
+      transform_lvars rho lxs @@ fun lzs -> FunCall (f, uxs, lzs)
 
 (* -------------------------------------------------------------------------- *)
 
 (* [drop x e] constructs the sequence [drop x; e]. *)
 
-let drop x e =
-  Let ([], [], Drop x, e)
+let drop x e = Let ([], [], Drop x, e)
 
 (* [drop xs e] constructs the sequence [drop xs; e]. *)
 
-let drop xs e =
-  List.fold_right drop xs e
+let drop xs e = List.fold_right drop xs e
 
 (* -------------------------------------------------------------------------- *)
 
@@ -184,27 +154,13 @@ let drop xs e =
 
 let rec fix (e : expr) : expr =
   match e with
-  | Loc (e, range) ->
-      Loc (fix e, range)
-  | Let (ubs, lbs, e1, e2) ->
-      Let (ubs, lbs, fix e1, drop_fix lbs e2)
-  | Ret _
-  | ULiteral _
-  | UUnOp _
-  | UBinOp _
-  | LZero _
-  | LAdd _
-  | LMul _
-  | Drop _
-  | Dup _
-  | UTupleIntro _
-  | LTupleIntro _
-  | FunCall _
-      -> e
-  | UTupleElim (ubs, x, e2) ->
-      UTupleElim (ubs, x, fix e2)
-  | LTupleElim (lbs, x, e2) ->
-      LTupleElim (lbs, x, drop_fix lbs e2)
+  | Loc (e, range) -> Loc (fix e, range)
+  | Let (ubs, lbs, e1, e2) -> Let (ubs, lbs, fix e1, drop_fix lbs e2)
+  | Ret _ | ULiteral _ | UUnOp _ | UBinOp _ | LZero _ | LAdd _ | LMul _ | Drop _
+  | Dup _ | UTupleIntro _ | LTupleIntro _ | FunCall _ ->
+      e
+  | UTupleElim (ubs, x, e2) -> UTupleElim (ubs, x, fix e2)
+  | LTupleElim (lbs, x, e2) -> LTupleElim (lbs, x, drop_fix lbs e2)
 
 and drop_fix (lbs : lbindings) (e : expr) : expr =
   (* Compute which variables must be dropped. *)
@@ -220,7 +176,7 @@ and drop_fix (lbs : lbindings) (e : expr) : expr =
    two transformations are independent of one another (they commute). *)
 
 let insert_decl decl =
-  clear();
+  clear ();
   match decl with
   | Decl (range, f, ubs, lbs, e) ->
       let rho = LVarMap.empty in

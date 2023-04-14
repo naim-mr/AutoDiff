@@ -1,7 +1,6 @@
 (* Real numbers. *)
 
-type real =
-  Real.real
+type real = Real.real
 
 (* Toplevel functions have names. *)
 
@@ -9,11 +8,8 @@ include Name
 
 (* Local variables have names. *)
 
-type var =
-  string
-
-type vars =
-  var list
+type var = string
+type vars = var list
 
 (* The types include the base type [real] and tuple types. *)
 
@@ -22,59 +18,39 @@ type vars =
    it cannot be nested inside a tuple type, and cannot appear in the
    declaration of a function parameter). *)
 
-type ty =
-  | TUnknown
-  | TReal
-  | TTuple of ty list
-
-type tys =
-  ty list
+type ty = TUnknown | TReal | TTuple of ty list
+type tys = ty list
 
 (* A type environment. *)
 
-type env =
-  ty Env.env
+type env = ty Env.env
 
 (* A function type. *)
 
-type fty =
-  tys * ty
+type fty = tys * ty
 
 (* A function type environment. *)
 
-type fenv =
-  fty Env.env
+type fenv = fty Env.env
 
 (* A binding is a variable accompanied with an explicit type. *)
 
-type binding =
-  var * ty
-
-type bindings =
-  binding list
+type binding = var * ty
+type bindings = binding list
 
 (* Unary operators. *)
 
-type unop =
-  | OpSin
-  | OpCos
-  | OpExp
+type unop = OpSin | OpCos | OpExp
 
 (* Binary operators. *)
 
-type binop =
-  | OpAdd
-  | OpSub
-  | OpMul
-  | OpDiv
+type binop = OpAdd | OpSub | OpMul | OpDiv
 
 (* Source code ranges. *)
 
-type range =
-  Lexing.position * Lexing.position
+type range = Lexing.position * Lexing.position
 
-let dummy : range =
-  (Lexing.dummy_pos, Lexing.dummy_pos)
+let dummy : range = (Lexing.dummy_pos, Lexing.dummy_pos)
 
 (* Expressions. *)
 
@@ -89,50 +65,32 @@ type expr =
   | TupleElim of vars * expr * expr
   | FunCall of name * exprs
 
-and exprs =
-  expr list
+and exprs = expr list
 
 (* Toplevel function declarations. *)
 
 (* Functions are not recursive. A function can call only a function
    that has been defined earlier. *)
 
-type decl =
-  | Decl of name * bindings * expr * range
-
-type decls =
-  decl list
+type decl = Decl of name * bindings * expr * range
+type decls = decl list
 
 (* Programs. *)
 
-type prog =
-  decls
+type prog = decls
 
 (* -------------------------------------------------------------------------- *)
 
 (* Constructors. *)
 
-
-let var x =
-  Var x
-
-let vars xs =
-  List.map var xs
-
-let lit c =
-  Literal c
-
-let lits cs =
-  List.map lit cs
+let var x = Var x
+let vars xs = List.map var xs
+let lit c = Literal c
+let lits cs = List.map lit cs
 
 (* -------------------------------------------------------------------------- *)
 
 (* Destructors. *)
 
-let name (decl : decl) : name =
-  match decl with
-  | Decl (name, _, _, _) ->
-      name
-
-let names (decls : decls) : names =
-  List.map name decls
+let name (decl : decl) : name = match decl with Decl (name, _, _, _) -> name
+let names (decls : decls) : names = List.map name decls

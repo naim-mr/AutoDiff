@@ -23,28 +23,30 @@ val of_float : float -> real
 
 (* Approximate equality tests. *)
 
+val near : real -> real -> bool
 (**[near x y] determines whether the numbers [x] and [y] are close to each
    other in an additive sense. *)
-val near : real -> real -> bool
 
+val close : real -> real -> bool
 (**[close observed expected] attempts to determine whether the numbers
    [observed] and [expected] are close to each other in a multiplicative
    sense. It is based on a comparison between the ratio [observed / expected]
    and the number 1. It is conservative: if it returns [false] then the
    numbers are definitely not close; if it returns [true] then the numbers may
    or may not be close. *)
-val close : real -> real -> bool
 
 (* The four traditional arithmetic operations on real numbers. *)
 
 (* Division is conservative: if [y] is near zero then [x /. y] raises the
    exception [NearZero]. *)
 
-val (+.) : real -> real -> real
-val (-.) : real -> real -> real
-val ( *.) : real -> real -> real
+val ( +. ) : real -> real -> real
+val ( -. ) : real -> real -> real
+val ( *. ) : real -> real -> real
+
 exception NearZero
-val (/.) : real -> real -> real
+
+val ( /. ) : real -> real -> real
 
 (* Sine, cosine, exponential. *)
 

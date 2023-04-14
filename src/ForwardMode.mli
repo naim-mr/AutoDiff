@@ -1,5 +1,6 @@
 open Linear
 
+val transform : prog -> prog
 (**[transform prog] performs forward-mode AD on the program [prog].
    The result is a transformed program.
 
@@ -22,4 +23,3 @@ open Linear
    In the transformed program, a linear variable may be used an
    arbitrary number of times (that is, zero, one, or more times).
    This can be later fixed by using [DupDropInsertion]. *)
-val transform: prog -> prog

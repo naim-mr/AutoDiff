@@ -1,5 +1,6 @@
 open Linear
 
+val transform : names -> prog -> prog
 (**[transform fs prog] returns a transformed version of the program [prog]
    where every function [f] in the list [fs] has been transformed into
    three functions, named [uf], [lf] and [cf].
@@ -19,4 +20,3 @@ open Linear
    The function [cf] combines [uf] and [lf]. It takes the parameters
    of [f], both unrestricted and linear, calls [uf] and [lf] in
    succession, and returns the linear results of [f]. *)
-val transform : names -> prog -> prog

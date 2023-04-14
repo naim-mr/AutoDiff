@@ -1,5 +1,6 @@
 open Linear
 
+val transform : names -> prog -> prog
 (**[transform fs prog] produces a transformed program where every
    function [f] in the list [fs] has been transposed.
 
@@ -11,4 +12,3 @@ open Linear
    results.) Its linear arguments and linear results are those of [f],
    exchanged: linear arguments become linear results, and vice-versa.
    The order of arguments and results is preserved. *)
-val transform: names -> prog -> prog

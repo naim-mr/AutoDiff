@@ -3,12 +3,9 @@ let postincrement c =
   c := x + 1;
   x
 
-let fresh c () =
-  postincrement c
-
-let clear c () =
-  c := 0
+let fresh c () = postincrement c
+let clear c () = c := 0
 
 let make () =
   let c = ref 0 in
-  fresh c, clear c
+  (fresh c, clear c)

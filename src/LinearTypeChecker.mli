@@ -1,8 +1,9 @@
 open Linear
 
-(**This exception is raised by [check]. *)
 exception Error of range option * string
+(**This exception is raised by [check]. *)
 
+val check : [ `Lenient | `Strict ] -> prog -> prog
 (**[check mode prog] checks that the program [prog] is well-typed.
 
    A moderate amount of bottom-up type inference is performed, as follows. The
@@ -20,9 +21,8 @@ exception Error of range option * string
 
    If a violation of the type-checking discipline is detected, then the
    exception [Error] is raised. *)
-val check: [`Lenient | `Strict] -> prog -> prog
 
+val environment : prog -> fenv
 (**[environment prog] assumes that the program [prog] is well-typed
    and returns an environment that maps every function name to the
    type of this function. *)
-val environment: prog -> fenv

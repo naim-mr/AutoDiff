@@ -24,14 +24,10 @@ type ctx = {
   uvs : UVarSet.t;
   lvs : LVarSet.t;
   (* The context itself. *)
-  fill: expr -> expr
+  fill : expr -> expr;
 }
 
-let empty = {
-  uvs = UVarSet.empty;
-  lvs = LVarSet.empty;
-  fill = fun e -> e
-}
+let empty = { uvs = UVarSet.empty; lvs = LVarSet.empty; fill = (fun e -> e) }
 
 (* -------------------------------------------------------------------------- *)
 
@@ -67,20 +63,10 @@ let empty = {
 let rec transform_expr (e : expr) (k : ctx) : expr =
   match e with
   | Loc (e, _range) -> transform_expr e k
-  | Ret _
-  | ULiteral _
-  | UUnOp _
-  | UBinOp _
-  | LZero _
-  | LAdd _
-  | LMul _
-  | Drop _
-  | Dup _
-  | UTupleIntro _
-  | LTupleIntro _
-  | FunCall _
-      (* An atomic expression. *)
-      -> k.fill e
+  | Ret _ | ULiteral _ | UUnOp _ | UBinOp _ | LZero _ | LAdd _ | LMul _ | Drop _
+  | Dup _ | UTupleIntro _ | LTupleIntro _ | FunCall _
+  (* An atomic expression. *) ->
+      k.fill e
   | Let (ubs, lbs, e1, e2) ->
       assert (udisjoint ubs k.uvs);
       assert (ldisjoint lbs k.lvs);
@@ -99,13 +85,9 @@ let rec transform_expr (e : expr) (k : ctx) : expr =
    the context [let ubs; lbs = [] in let e2 in k]. *)
 
 and transform_let ubs lbs e2 (k : ctx) : ctx =
-  let fill e1 =
-    Let (ubs, lbs, e1, transform_expr e2 k)
-  and uvs =
-    UVarSet.(remove_ubindings ubs (fuv e2) + k.uvs)
-  and lvs =
-    LVarSet.(remove_lbindings lbs (flv e2) + k.lvs)
-  in
+  let fill e1 = Let (ubs, lbs, e1, transform_expr e2 k)
+  and uvs = UVarSet.(remove_ubindings ubs (fuv e2) + k.uvs)
+  and lvs = LVarSet.(remove_lbindings lbs (flv e2) + k.lvs) in
   { uvs; lvs; fill }
 
 (* -------------------------------------------------------------------------- *)
@@ -113,14 +95,13 @@ and transform_let ubs lbs e2 (k : ctx) : ctx =
 (* Normalizing declarations. *)
 
 let transform_decl (decl : decl) : decl =
-  clear();
+  clear ();
   match decl with
   | Decl (range, f, ubs, lbs, e) ->
       Decl (range, f, ubs, lbs, transform_expr e empty)
 
-let transform_decls decls : decls =
-  map transform_decl decls
+let transform_decls decls : decls = map transform_decl decls
 
 let transform prog : prog =
-  no_fresh_names();
+  no_fresh_names ();
   transform_decls prog
